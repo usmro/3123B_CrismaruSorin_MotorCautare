@@ -1,4 +1,22 @@
-app
-app.exe
-
+# CMake / build artifacts
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
 build/
+
+# object / binary files
+*.o
+*.o.d
+*.exe
+*.out
+*.log
+*.obj
+*.pdb
+*.ilk
+
+# editor / OS junk
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+*.pyc
