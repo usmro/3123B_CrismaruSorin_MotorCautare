@@ -12,6 +12,10 @@ Index::Index(const std::string& stopwordsPath) {
 }
 
 void Index::incarcaStopwords(const std::string& caleFisier) {
+    if (caleFisier.empty()) {
+        return;
+    }
+
     std::ifstream fisier(caleFisier);
     if (!fisier.is_open()) {
         std::filesystem::path caleAbsoluta = std::filesystem::absolute(caleFisier);
@@ -52,29 +56,25 @@ void Index::incarcaDocumenteDinDirector(const std::string& caleDirector) {
 void Index::construiesteIndex() {
     m_index.clear();
 
-    for (const auto& document : m_documente) {
-        std::istringstream flux(document.obtineContinut());
-        std::string linie;
-        int numarLinie = 1;
-
-        while (std::getline(flux, linie)) {
-            std::istringstream fluxLinie(linie);
-            std::string token;
-
-            while (fluxLinie >> token) {
-                const std::string cuvant = normalizeazaCuvant(token);
-                if (cuvant.empty() || m_stopwords.count(cuvant)) {
-                    continue;
+    for (size_t docId = 0; docId < m_documente.size(); ++docId) {
+        const auto& document = m_documente[docId];
+        document.proceseazaCuvinte([this, docId](const std::string& cuvant, int numarLinie) {
+            if (!cuvant.empty() && !m_stopwords.count(cuvant)) {
+                auto& doc_list = m_index[cuvant];
+                if (doc_list.empty() || doc_list.back().first != docId) {
+                    doc_list.push_back({docId, {numarLinie}});
+                } else {
+                    auto& vector_linii = doc_list.back().second;
+                    if (vector_linii.back() != numarLinie) {
+                        vector_linii.push_back(numarLinie);
+                    }
                 }
-
-                m_index[cuvant][document.obtineCaleFisier()].push_back(numarLinie);
             }
-            numarLinie++;
-        }
+        });
     }
 }
 
-std::map<std::string, std::map<std::string, std::vector<int>>> Index::cauta(const std::string& query) {
+std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> Index::cauta(const std::string& query) {
     std::istringstream iss(query);
     std::string token;
     std::vector<std::string> cuvinte;
@@ -91,7 +91,7 @@ std::map<std::string, std::map<std::string, std::vector<int>>> Index::cauta(cons
         }
     }
 
-    std::map<std::string, std::map<std::string, std::vector<int>>> rezultatFinal;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> rezultatFinal;
 
     if (cuvinte.empty()) {
         return {};
@@ -115,7 +115,7 @@ std::map<std::string, std::map<std::string, std::vector<int>>> Index::cauta(cons
     } else { // AND
         // Gasim documente ce contin toate cuvintele
         // Afisam fiecare linie pe care se afla fiecare cuvant
-        std::map<std::string, std::vector<int>> documenteComune;
+        std::unordered_map<std::string, std::vector<int>> documenteComune;
         bool primulCuvant = true;
 
         for (const auto& cuvant : cuvinte) {
@@ -124,7 +124,7 @@ std::map<std::string, std::map<std::string, std::vector<int>>> Index::cauta(cons
                 documenteComune = rezultatCuvant;
                 primulCuvant = false;
             } else {
-                std::map<std::string, std::vector<int>> tempDocs;
+                std::unordered_map<std::string, std::vector<int>> tempDocs;
                 for (auto const& [doc, linii] : documenteComune) {
                     if (rezultatCuvant.count(doc)) {
                         tempDocs[doc] = {}; // Populam liniile mai tarziu
@@ -149,7 +149,7 @@ std::map<std::string, std::map<std::string, std::vector<int>>> Index::cauta(cons
     return rezultatFinal;
 }
 
-std::map<std::string, std::vector<int>> Index::cautaUnSingurCuvant(const std::string& cuvant) {
+std::unordered_map<std::string, std::vector<int>> Index::cautaUnSingurCuvant(const std::string& cuvant) {
     const std::string cuvantNormalizat = normalizeazaCuvant(cuvant);
     if (m_stopwords.count(cuvantNormalizat)) {
         return {};
@@ -159,14 +159,19 @@ std::map<std::string, std::vector<int>> Index::cautaUnSingurCuvant(const std::st
     std::stringstream logMessage;
     logMessage << "Cautare pentru '" << cuvant << "': ";
 
+    std::unordered_map<std::string, std::vector<int>> rezultateFormatate;
+
     if (it == m_index.end() || it->second.empty()) {
         logMessage << "Niciun document gasit.";
         notifica(logMessage.str());
-        return {};
+        return rezultateFormatate;
     }
 
     for (const auto& pair : it->second) {
-        logMessage << "Gasit in " << pair.first << " (linii: ";
+        std::string numeDoc = m_documente[pair.first].obtineCaleFisier();
+        rezultateFormatate[numeDoc] = pair.second;
+        
+        logMessage << "Gasit in " << numeDoc << " (linii: ";
         for (size_t i = 0; i < pair.second.size(); ++i) {
             logMessage << pair.second[i] << (i < pair.second.size() - 1 ? ", " : "");
         }
@@ -174,7 +179,7 @@ std::map<std::string, std::vector<int>> Index::cautaUnSingurCuvant(const std::st
     }
     
     notifica(logMessage.str());
-    return it->second;
+    return rezultateFormatate;
 }
 
 std::string Index::normalizeazaCuvant(const std::string& cuvant) {

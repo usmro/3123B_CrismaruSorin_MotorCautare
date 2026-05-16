@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 //cum functioneaza pt. documente extreme
 #include "Observable.h"
 
@@ -14,13 +15,10 @@ public:
         Document(const std::string& caleFisier);
         //referinta, read-only
         const std::string& obtineCaleFisier() const;
-        const std::string& obtineContinut() const;
+        void proceseazaCuvinte(const std::function<void(const std::string&, int)>& callback) const;
 
     private:
         std::string m_caleFisier;
-        std::string m_continut;
-
-        void incarcaContinut();
 };
 
 #endif // DOCUMENT_H

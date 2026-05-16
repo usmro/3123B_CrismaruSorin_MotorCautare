@@ -50,7 +50,7 @@ int main(int, char**) {
     
     char folderPath[128] = ".";
     char searchQuery[128] = "";
-    std::map<std::string, std::map<std::string, std::vector<int>>> searchResults;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> searchResults;
     bool searchPerformed = false;
 
     // Loop principal
