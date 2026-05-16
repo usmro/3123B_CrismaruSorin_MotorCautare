@@ -16,7 +16,7 @@ static void glfw_error_callback(int error, const char* description) {
 }
 
 int main(int, char**) {
-    // Seteaza fereastra
+    // Error handling openGL
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -44,13 +44,13 @@ int main(int, char**) {
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Starea aplicatiei
-    Index index("../stopwords.txt");
-    Logger logger("../log.txt");
+    Index index("./stopwords.txt");
+    Logger logger("./log.txt");
     index.adaugaObserver(&logger);
     
     char folderPath[128] = ".";
     char searchQuery[128] = "";
-    std::map<std::string, std::map<std::string, std::vector<int>>> searchResults;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> searchResults;
     bool searchPerformed = false;
 
     // Loop principal
@@ -84,18 +84,21 @@ int main(int, char**) {
         ImGui::Begin("Rezultate Cautare");
         if (searchPerformed) {
             if (searchResults.empty()) {
-                ImGui::Text("Niciun rezultat gasit.");
+                ImGui::TextWrapped("Niciun rezultat gasit.");
             } else {
                 for (const auto& [cuvant, docs] : searchResults) {
-                    ImGui::Text("Cuvant: %s", cuvant.c_str());
+                    ImGui::TextWrapped("Cuvant: %s", cuvant.c_str());
                     for (const auto& [docPath, linii] : docs) {
-                        ImGui::Text("  Document: %s", docPath.c_str());
-                        ImGui::Text("    Linii: ");
-                        ImGui::SameLine();
+                        ImGui::TextWrapped("  Document: %s", docPath.c_str());
+                        std::string liniiString = "Linii: ";
                         for (size_t i = 0; i < linii.size(); ++i) {
-                            ImGui::Text("%d ", linii[i]);
-                            if (i < linii.size() - 1) ImGui::SameLine();
+                            liniiString += std::to_string(linii[i]);
+                            if(i < linii.size() - 1){
+                                liniiString += ", ";
+                            }
                         }
+                        ImGui::TextWrapped("%s", liniiString.c_str());
+                        ImGui::Spacing();
                     }
                 }
             }

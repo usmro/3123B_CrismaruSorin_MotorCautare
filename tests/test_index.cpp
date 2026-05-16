@@ -66,8 +66,12 @@ void testDocument(TestRunner& runner) {
     Document doc(testFile);
     
     runner.assertEqual(doc.obtineCaleFisier(), testFile, "Document path retrieval");
-    runner.assertTrue(!doc.obtineContinut().empty(), "Document content loading");
-    runner.assertTrue(doc.obtineContinut().find("test") != std::string::npos, 
+    std::string continut;
+    doc.proceseazaCuvinte([&continut](const std::string& cuvant, int) {
+        continut += cuvant + " ";
+    });
+    runner.assertTrue(!continut.empty(), "Document content loading");
+    runner.assertTrue(continut.find("test") != std::string::npos, 
                      "Document content contains expected text");
 }
 
