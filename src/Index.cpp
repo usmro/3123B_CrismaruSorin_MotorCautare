@@ -59,7 +59,7 @@ void Index::construiesteIndex() {
     for (size_t docId = 0; docId < m_documente.size(); ++docId) {
         const auto& document = m_documente[docId];
         document.proceseazaCuvinte([this, docId](const std::string& cuvant, int numarLinie) {
-            if (!cuvant.empty() && !m_stopwords.count(cuvant)) {
+            if (!cuvant.empty()) {
                 auto& doc_list = m_index[cuvant];
                 if (doc_list.empty() || doc_list.back().first != docId) {
                     doc_list.push_back({docId, {numarLinie}});
@@ -77,7 +77,7 @@ void Index::construiesteIndex() {
 std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> Index::cauta(const std::string& query) {
     std::istringstream iss(query);
     std::string token;
-    std::vector<std::string> cuvinte;
+    std::vector<std::string> cuvinteTotale;
     std::string op = "AND"; // Default la AND
 
     // Folosim OR?
@@ -87,7 +87,29 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>
 
     while (iss >> token) {
         if (token != "AND" && token != "OR") {
-            cuvinte.push_back(token);
+            cuvinteTotale.push_back(token);
+        }
+    }
+
+    std::vector<std::string> cuvinte;
+    
+    // Verificam daca utilizatorul a folosit explicit cuvantul cheie "AND"
+    bool areExplicitAnd = (query.find(" AND ") != std::string::npos);
+    
+    if (op == "AND" && areExplicitAnd) {
+        // Pentru operatiunea AND explicit ceruta, consideram stopwords ca fiind relevante
+        cuvinte = cuvinteTotale;
+    } else {
+        // Pentru comportamentul default sau pentru OR, filtram stopwords
+        for (const auto& c : cuvinteTotale) {
+            if (!m_stopwords.count(normalizeazaCuvant(c))) {
+                cuvinte.push_back(c);
+            }
+        }
+        
+        // Daca s-a cautat strict un stopword (sau doar stopwords), anulăm filtrarea
+        if (cuvinte.empty() && !cuvinteTotale.empty()) {
+            cuvinte = cuvinteTotale;
         }
     }
 
@@ -151,9 +173,6 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>
 
 std::unordered_map<std::string, std::vector<int>> Index::cautaUnSingurCuvant(const std::string& cuvant) {
     const std::string cuvantNormalizat = normalizeazaCuvant(cuvant);
-    if (m_stopwords.count(cuvantNormalizat)) {
-        return {};
-    }
     const auto it = m_index.find(cuvantNormalizat);
 
     std::stringstream logMessage;
