@@ -21,7 +21,7 @@ void Document::proceseazaCuvinte(const std::function<void(const std::string&, in
 
     const size_t bufferSize = 65536; // 64 KB chunk
     std::vector<char> buffer(bufferSize);
-    std::string cuvant;
+    std::string cuvant; // Un "cuvant" este limitat de memoria heap
     int numarLinie = 1;
 
     while (fisier.read(buffer.data(), bufferSize) || fisier.gcount() > 0) {

@@ -39,7 +39,7 @@ classDiagram
     }
 
     class Observable {
-        -m_observers : vector~Observer~
+        -m_observers : vector~Observer*~
         +adaugaObserver(obs: Observer) void
         +scoateObserver(obs: Observer) void
         #notifica(mesaj: string) void
@@ -70,5 +70,5 @@ classDiagram
     Observable <|-- Index
     Observer <|-- Logger
     Observable --> Observer : notifica()
-    Index "1" *-- "*" Document : conţine
+    Index *-- "*" Document : conţine
 ```
