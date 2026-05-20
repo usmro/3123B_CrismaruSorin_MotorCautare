@@ -12,6 +12,11 @@
 
 namespace {
 
+constexpr const char* CULOARE_RESET = "\033[0m";
+constexpr const char* CULOARE_CYAN = "\033[36m";
+constexpr const char* CULOARE_CYAN_BOLD = "\033[1;36m";
+constexpr const char* CULOARE_GALBEN = "\033[33m";
+
 std::filesystem::path obtineDirectorExecutabil() {
     char buffer[PATH_MAX + 1] = {0};
     const ssize_t lungime = ::readlink("/proc/self/exe", buffer, PATH_MAX);
@@ -32,6 +37,15 @@ std::string obtineDirectorImplicitCautare() {
 }
 
 } // namespace
+
+void afiseazaMeniu() {
+    std::cout << "\n" << CULOARE_CYAN_BOLD << "=== Motor de Cautare CLI ===" << CULOARE_RESET << std::endl;
+    std::cout << CULOARE_CYAN << "1. Schimba directorul de cautare" << CULOARE_RESET << std::endl;
+    std::cout << CULOARE_CYAN << "2. Vezi documentele indexate" << CULOARE_RESET << std::endl;
+    std::cout << CULOARE_CYAN << "3. Cauta cuvinte" << CULOARE_RESET << std::endl;
+    std::cout << CULOARE_CYAN << "4. Iesire" << CULOARE_RESET << std::endl;
+    std::cout << CULOARE_CYAN_BOLD << "Alegeti o optiune: " << CULOARE_RESET;
+}
 
 int main(int argc, char* argv[]) {
     const std::string directorImplicit = obtineDirectorImplicitCautare();
@@ -56,44 +70,72 @@ int main(int argc, char* argv[]) {
     std::cout << "Se încarcă documentele din '" << directorCautare << "' și se construiește indexul..." << std::endl;
     index.incarcaDocumenteDinDirector(directorCautare);
     index.construiesteIndex();
-    std::cout << "Indexare finalizată." << std::endl;
+    std::cout << index.obtineDocumente().size() << " " << "documente indexate." << std::endl;
 
-    std::string query;
-    while (true) {
-        std::cout << "\nIntroduceți interogarea de căutare (sau 'exit' pentru a ieși): ";
-        std::getline(std::cin, query);
+    bool ruleaza = true;
+    while (ruleaza) {
+        std::cout << "\n" << CULOARE_GALBEN << "Director curent: " << CULOARE_RESET << directorCautare << std::endl;
+        afiseazaMeniu();
+        
+        std::string optiune;
+        std::getline(std::cin, optiune);
 
-        if (query == "exit") {
-            break;
-        }
+        std::cout << "\n" << CULOARE_CYAN_BOLD << "=== Motor de Cautare CLI ===" << CULOARE_RESET << std::endl;
 
-        if (query.empty()) {
-            continue;
-        }
+        if (optiune == "1") {
+            std::cout << "Introduceti noua cale (sau lasati gol pentru a anula): ";
+            std::string nouaCale;
+            std::getline(std::cin, nouaCale);
+            if (!nouaCale.empty()) {
+                directorCautare = nouaCale;
+                std::cout << "Se reincarca documentele din '" << directorCautare << "'..." << std::endl;
+                index.incarcaDocumenteDinDirector(directorCautare);
+                index.construiesteIndex();
+                std::cout << index.obtineDocumente().size() << " " << "documente indexate." << std::endl;
+            }
+        } else if (optiune == "2") {
+            const auto& documente = index.obtineDocumente();
+            std::cout << "\nDocumente indexate (" << documente.size() << "):" << std::endl;
+            for (const auto& doc : documente) {
+                std::cout << "- " << doc.obtineCaleFisier() << std::endl;
+            }
+        } else if (optiune == "3") {
+            std::cout << "\nIntroduceți interogarea de căutare (sau lasati gol pentru a anula): ";
+            std::string query;
+            std::getline(std::cin, query);
 
-        const auto rezultate = index.cauta(query);
-
-        std::cout << "Rezultate pentru query-ul '" << query << "':" << std::endl;
-        if (rezultate.empty()) {
-            std::cout << "Niciun document gasit." << std::endl;
-        } else {
-            std::map<std::string, std::vector<std::pair<std::string, std::vector<int>>>> documenteAfisate;
-            for (const auto& [cuvant, docs] : rezultate) {
-                for (const auto& [doc, linii] : docs) {
-                    documenteAfisate[doc].push_back({cuvant, linii});
-                }
+            if (query.empty()) {
+                continue;
             }
 
-            for (const auto& [doc, detalii] : documenteAfisate) {
-                std::cout << "- " << doc << ":" << std::endl;
-                for (const auto& pereche : detalii) {
-                    std::cout << "  - Cuvantul '" << pereche.first << "' gasit pe liniile: ";
-                    for (size_t i = 0; i < pereche.second.size(); ++i) {
-                        std::cout << pereche.second[i] << (i < pereche.second.size() - 1 ? ", " : "");
+            const auto rezultate = index.cauta(query);
+
+            std::cout << "Rezultate pentru query-ul '" << query << "':" << std::endl;
+            if (rezultate.empty()) {
+                std::cout << "Niciun document gasit." << std::endl;
+            } else {
+                std::map<std::string, std::vector<std::pair<std::string, std::vector<int>>>> documenteAfisate;
+                for (const auto& [cuvant, docs] : rezultate) {
+                    for (const auto& [doc, linii] : docs) {
+                        documenteAfisate[doc].push_back({cuvant, linii});
                     }
-                    std::cout << std::endl;
+                }
+
+                for (const auto& [doc, detalii] : documenteAfisate) {
+                    std::cout << "- " << doc << ":" << std::endl;
+                    for (const auto& pereche : detalii) {
+                        std::cout << "  - Cuvantul '" << pereche.first << "' gasit pe liniile: ";
+                        for (size_t i = 0; i < pereche.second.size(); ++i) {
+                            std::cout << pereche.second[i] << (i < pereche.second.size() - 1 ? ", " : "");
+                        }
+                        std::cout << std::endl;
+                    }
                 }
             }
+        } else if (optiune == "4" || optiune == "exit" || optiune == "quit") {
+            ruleaza = false;
+        } else {
+            std::cout << "Optiune invalida!" << std::endl;
         }
     }
 
