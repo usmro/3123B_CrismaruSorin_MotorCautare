@@ -59,7 +59,7 @@ void Index::construiesteIndex() {
     for (size_t docId = 0; docId < m_documente.size(); ++docId) {
         const auto& document = m_documente[docId];
         document.proceseazaCuvinte([this, docId](const std::string& cuvant, int numarLinie) {
-            if (!cuvant.empty()) {
+            if (!cuvant.empty()) { 
                 auto& doc_list = m_index[cuvant];
                 if (doc_list.empty() || doc_list.back().first != docId) {
                     doc_list.push_back({docId, {numarLinie}});
