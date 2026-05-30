@@ -66,9 +66,36 @@ classDiagram
         +cauta(query: string) unordered_map
     }
 
+    class LinieRezultat {
+        +cuvinte: vector~string~
+    }
+
+    class DocumentRezultat {
+        +cale: string
+        +scor: int
+        +linii: map~int, LinieRezultat~
+    }
+
+    class MatchSpan {
+        +start: int
+        +length: int
+        +term: string
+    }
+
+    class SearchResults {
+        <<utility>>
+        +extrageCuvintePentruHighlight(query: string) vector~string~
+        +construiesteRezultateSortate(rezultate: unordered_map) vector~DocumentRezultat~
+        +afiseazaRezultatePentruDocument(docInfo: DocumentRezultat, cuvinteHighlight: vector~string~) void
+        +gasesteSpanuriPentruCuvinte(text: string, terms: vector~string~) vector~MatchSpan~
+    }
+
     Observable <|-- Document
     Observable <|-- Index
     Observer <|-- Logger
     Observable --> Observer : notifica()
     Index *-- "*" Document : conţine
+    SearchResults --> DocumentRezultat
+    DocumentRezultat *-- "*" LinieRezultat
+    SearchResults --> MatchSpan
 ```
