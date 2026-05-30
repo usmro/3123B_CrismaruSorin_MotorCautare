@@ -11,6 +11,9 @@ const std::string& Document::obtineCaleFisier() const {
     return m_caleFisier;
 }
 
+// Citește fișierul în chunk-uri și emite cuvinte prin callback.
+// Fiecare callback primește cuvântul normalizat și numărul de linie.
+// Strategia chunk-based previne încărcarea întregului fișier în memorie.
 void Document::proceseazaCuvinte(const std::function<void(const std::string&, int)>& callback) const {
     std::ifstream fisier(m_caleFisier, std::ios::binary);
     if (!fisier.is_open()) {

@@ -19,7 +19,57 @@ Aplicația a fost eventual modificată pentru a reduce memoria ocupată pentru f
 
 Aceste optimizări au redus memoria consumată pentru indexarea unui .txt de 1GB pe o linie de la ~5GB la 64KB, și multiline la ~800MB.
 
-## 4. Testare și Integrare Continuă
+## 4. Caracteristici de Căutare
+
+### 4.1. Căutare Standard și Phrase Search
+- **Căutare standard:** Interogări separate prin spații sunt combinate cu semantica AND (implicit). Cuvintele în `stopwords.txt` sunt ignorate automat.
+- **Phrase Search:** Termeni închiși în ghilimele (ex: `"exact phrase"`) sunt tratați ca o frază exactă și se caută pe aceeași linie, într-o ordine și poziție specifice.
+- **Excludere fișiere sistem:** Fișierele `log.txt` și `stopwords.txt` sunt excluse din indexare pentru a evita rezultate înșelătoare.
+
+### 4.2. Highlighting și Afișare Rezultate
+- **Inline Highlighting (GUI):** Textul din rezultate afișează termenii potriviți în galben, cu wrapping automat la limita ferestrei.
+- **CLI Highlighting:** Termenii sunt evidențiați cu coduri ANSI în ieșirea consolei.
+- **Span-uri de Potrivire:** Funcția `gasesteSpanuriPentruCuvinte` calculează pozițiile (byte offset-uri) pentru fiecare termen potrivit, evitând suprapuneri și verificând granițe de cuvânt.
+
+## 5. Utilități și Componente de Rezultate
+
+### 5.1. SearchResults
+Modulul `SearchResults` furnizează funcții helper pentru construirea și afișarea rezultatelor de căutare:
+
+- **`extrageCuvintePentruHighlight(query: string) → vector<string>`**  
+  Extrage din interogare termenii de highlighting (ignora operatori booleeni și ghilimele).
+
+- **`construiesteRezultateSortate(rezultate) → vector<DocumentRezultat>`**  
+  Transformă indexul invers (unordered_map) într-un vector de rezultate sortat descendent după scor.
+
+- **`gasesteSpanuriPentruCuvinte(text, terms) → vector<MatchSpan>`**  
+  Returnează o listă de span-uri ne-supravompuse (offset-uri în bytes) pentru termenii furnizați, cu verificare de granițe de cuvânt (UTF-8 aware).
+
+- **`afiseazaRezultatePentruDocument(docInfo, cuvinteHighlight)`**  
+  Afișează în consolă (CLI) liniile potrivite cu highlighting în culori ANSI.
+
+### 5.2. Structuri de Rezultate
+
+- **`LinieRezultat`:** Conține vectorul de cuvinte potrivite pe o linie specifică.
+- **`DocumentRezultat`:** Încapsulează calea fișierului, scorul (numărul de potriviri) și o hartă de linii cu termenii lor potriviți.
+- **`MatchSpan`:** Definește o potrivire: `start` (offset), `length` (lungimea în bytes), `term` (termenul potrivit).
+
+## 6. Interfața GUI
+
+### 6.1. Highlighting și Wrapping
+- GUI-ul afișează textul liniilor potrivite cu termenii evidențiați inline în galben.
+- Textul se rupe pe randuri atunci când depășește lățimea ferestrei disponibile, păstrând colori și indentarea.
+
+### 6.2. Gestionarea Fonturilor
+GUI-ul încearcă să înccarce un font TTF cu suport pentru caractere diactrice românești (gliph-uri din intervalul Latin Extended A+B):
+
+1. **Font din proiect:** `vendor/imgui/misc/fonts/DroidSans.ttf` sau `Roboto-Medium.ttf`
+2. **Font de sistem:** `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` (Linux)
+3. **Fallback:** Dacă niciun font nu e disponibil, ImGui utilizează fontul implicit (s-ar putea pierde diacritice).
+
+Această abordare asigură portabilitate și nu depinde de configurații fixe ale sistemului.
+
+## 7. Testare și Integrare Continuă
 Proiectul include teste unitare simple în `tests/test_index.cpp`, compilate ca executabil separat prin CMake și rulate automat cu `ctest`.
 
 Pentru integrarea pe GitHub, repository-ul conține workflow-ul `.github/workflows/tests.yml`, care execută următorii pași la `push` și `pull_request`:
@@ -30,7 +80,7 @@ Pentru integrarea pe GitHub, repository-ul conține workflow-ul `.github/workflo
 
 Această integrare permite verificarea automată a proiectului înainte de acceptarea modificărilor și ajută la menținerea unei baze de cod stabile.
 
-## 5. Diagrama UML (Simplificată)
+## 8. Diagrama UML (Simplificată)
 ```mermaid
 classDiagram
     class Observer {

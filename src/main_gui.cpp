@@ -26,6 +26,8 @@ struct GuiTextSegment {
     ImVec4 color;
 };
 
+// Redă textul colorat cu wrapping la limita ferestrei ImGui.
+// Rupe cuvintele la spații și resetează poziția X la marginea ferestrei când se depășește dimensiunea disponibilă.
 static void renderWrappedColoredText(const std::vector<GuiTextSegment>& segments) {
     const float startX = ImGui::GetCursorPosX();
     const float wrapX = startX + ImGui::GetContentRegionAvail().x;
@@ -61,6 +63,9 @@ static void renderWrappedColoredText(const std::vector<GuiTextSegment>& segments
     ImGui::NewLine();
 }
 
+// Încearcă să încarce un font TTF cu glyph-uri pentru caractere diactrice românești (Latin Extended A+B: 0x0020-0x024F).
+// Încearcă mai întâi fonturile din proiect (vendor/imgui/misc/fonts/), apoi fontul de sistem (DejaVu).
+// Dacă niciun font nu e găsit, ImGui va folosi fontul implicit (ce ar putea lipsi diacritice).
 static void incarcaFontCuDiacritice(const std::filesystem::path& directorProiect) {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -69,6 +74,7 @@ static void incarcaFontCuDiacritice(const std::filesystem::path& directorProiect
     config.OversampleV = 1;
     config.PixelSnapH = true;
 
+    // Range Unicode: 0x0020 = spatiu, 0x024F = ț (include ă, î, ș, ț, etc.)
     static const ImWchar rangeLatinExtins[] = { 0x0020, 0x024F, 0 };
     const std::vector<std::filesystem::path> caiFont = {
         directorProiect / "vendor" / "imgui" / "misc" / "fonts" / "DroidSans.ttf",

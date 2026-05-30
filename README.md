@@ -4,10 +4,12 @@ Acesta este un proiect simplu de motor de căutare în C++, care indexează fiș
 
 ## Caracteristici
 
-*   Indexarea cuvintelor din fișiere text.
-*   Căutarea cuvintelor și afișarea documentelor și a liniilor unde apar.
-*   Gestionarea "stopwords".
-*   Interfață grafică.
+*   Indexarea cuvintelor din fișiere text, excluzând fișiere de sistem (log.txt, stopwords.txt).
+*   **Căutare standard:** Cuvinte separate prin spații, combinate cu semantica AND; cuvintele din stopwords sunt ignorate.
+*   **Phrase Search:** Termeni între ghilimele (ex: `"exact phrase"`) sunt căutați ca fraze exacte pe aceeași linie.
+*   **Highlighting inline:** 
+     - GUI: Termenii potriviți sunt evidențiați în galben cu wrapping automat.
+     - CLI: Termenii sunt evidențiați cu coduri ANSI în ieșirea consolei.
 *   Logging-ul acțiunilor într-un fișier `log.txt` folosind modelul de proiectare Observer.
 
 ## Dependințe
@@ -78,6 +80,33 @@ sudo apt-get install build-essential cmake git libglfw3-dev libopengl-dev
    ```bash
    ./build/test_index
    ```
+
+## Utilizare
+
+### Exemplu de Căutare CLI
+
+```bash
+# Căutare simplă: cuvinte multiple (AND implicit)
+./build/motor_cautare_cli
+> motor căutare
+
+# Phrase Search: termeni între ghilimele
+./build/motor_cautare_cli
+> "motor de căutare"
+
+# Combinație: cuvinte și fraze
+./build/motor_cautare_cli
+> "motor de căutare" performant
+```
+
+### Interfață GUI
+
+1. Deschideți `./build/motor_cautare_gui`
+2. Introduceți calea la directorul pe care doriți să-l indexați (sau lăsați implicita)
+3. Apăsați "Încarcă și Indexează"
+4. În câmpul "Interogare Căutare", introduceți termenii (cu sau fără ghilimele pentru fraze)
+5. Apăsați "Căută" sau Enter
+6. Rezultatele vor apărea cu termenii evidențiați în galben
 
 ## Organizarea Documentației
 

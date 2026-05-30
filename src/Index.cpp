@@ -104,9 +104,13 @@ void Index::incarcaDocumenteDinDirector(const std::string& caleDirector) {
     }
 }
 
+// Construiește indexul invers din documentele încărcate.
+// Structura: unordered_map<cuvânt, vector<pair<docId, vector<linii>>>>
+// Pentru fiecare cuvânt, reține lista de documente și liniile unde apare.
 void Index::construiesteIndex() {
     m_index.clear();
 
+    // Iterează prin documente și colectează toate cuvintele cu pozițiile lor (doc ID + linie)
     for (size_t docId = 0; docId < m_documente.size(); ++docId) {
         const auto& document = m_documente[docId];
         document.proceseazaCuvinte([this, docId](const std::string& cuvant, int numarLinie) {

@@ -201,10 +201,14 @@ void afiseazaRezultatePentruDocument(
     }
 }
 
+// Calculeaza pozitiile (byte offset-uri) pentru fiecare termen gasit in text.
+// Returneaza span-uri ne-suprapuse, verificand granite de cuvant (UTF-8 aware).
+// Strategie: colecteaza toate potrivirile, sorteazele, apoi filtreazele pentru a evita suprapuneri.
 std::vector<MatchSpan> gasesteSpanuriPentruCuvinte(const std::string& text, const std::vector<std::string>& terms) {
     std::vector<MatchSpan> spans;
     if (text.empty() || terms.empty()) return spans;
 
+    // Itereaza prin fiecare termen si gaseste toate potrivirile (case-insensitive)
     for (const auto& term : terms) {
         if (term.empty()) continue;
         const std::string termEsc = escapeazaPentruRegex(term);
