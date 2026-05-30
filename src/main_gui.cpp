@@ -1,5 +1,6 @@
 #include "Index.h"
 #include "Logger.h"
+#include "SearchResults.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -11,12 +12,54 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <fstream>
+#include <algorithm>
 
 #include <limits.h>
 #include <unistd.h>
 #include <cstring>
 
 namespace {
+
+struct GuiTextSegment {
+    std::string text;
+    ImVec4 color;
+};
+
+static void renderWrappedColoredText(const std::vector<GuiTextSegment>& segments) {
+    const float startX = ImGui::GetCursorPosX();
+    const float wrapX = startX + ImGui::GetContentRegionAvail().x;
+
+    auto renderPiece = [&](const std::string& piece, const ImVec4& color) {
+        if (piece.empty()) return;
+
+        const ImVec2 size = ImGui::CalcTextSize(piece.c_str());
+        const float curX = ImGui::GetCursorPosX();
+        if (curX + size.x > wrapX && curX > startX) {
+            ImGui::NewLine();
+            ImGui::SetCursorPosX(startX);
+        }
+
+        ImGui::TextColored(color, "%s", piece.c_str());
+        ImGui::SameLine(0.0f, 0.0f);
+    };
+
+    for (const auto& seg : segments) {
+        std::string token;
+        for (char ch : seg.text) {
+            if (std::isspace(static_cast<unsigned char>(ch))) {
+                renderPiece(token, seg.color);
+                token.clear();
+                renderPiece(std::string(1, ch), seg.color);
+            } else {
+                token.push_back(ch);
+            }
+        }
+        renderPiece(token, seg.color);
+    }
+
+    ImGui::NewLine();
+}
 
 std::filesystem::path obtineDirectorExecutabil() {
     char buffer[PATH_MAX + 1] = {0};
@@ -130,26 +173,93 @@ int main(int, char**) {
 
         // Fereastra rezultate
         ImGui::Begin("Rezultate Cautare");
-        if (searchPerformed) {
-            if (searchResults.empty()) {
-                ImGui::TextWrapped("Niciun rezultat gasit.");
-            } else {
-                for (const auto& [cuvant, docs] : searchResults) {
-                    ImGui::TextWrapped("Cuvant: %s", cuvant.c_str());
-                    for (const auto& [docPath, linii] : docs) {
-                        ImGui::TextWrapped("  Document: %s", docPath.c_str());
-                        std::string liniiString = "Linii: ";
-                        for (size_t i = 0; i < linii.size(); ++i) {
-                            liniiString += std::to_string(linii[i]);
-                            if(i < linii.size() - 1){
-                                liniiString += ", ";
+            if (searchPerformed) {
+                if (searchResults.empty()) {
+                    ImGui::TextWrapped("Niciun rezultat gasit.");
+                } else {
+                    // Construiește rezultatele sortate pentru GUI (reprezentare locală)
+                    struct GuiDocInfo { std::string cale; int scor = 0; std::map<int, std::vector<std::string>> linii; };
+
+                    std::map<std::string, GuiDocInfo> mapDocs;
+                    for (const auto& [cuvant, docs] : searchResults) {
+                        for (const auto& [doc, linii] : docs) {
+                            mapDocs[doc].cale = doc;
+                            mapDocs[doc].scor += static_cast<int>(linii.size());
+                            for (int linie : linii) {
+                                mapDocs[doc].linii[linie].push_back(cuvant);
                             }
                         }
-                        ImGui::TextWrapped("%s", liniiString.c_str());
+                    }
+
+                    std::vector<GuiDocInfo> docsSortate;
+                    docsSortate.reserve(mapDocs.size());
+                    for (const auto& [cale, info] : mapDocs) docsSortate.push_back(info);
+                    std::sort(docsSortate.begin(), docsSortate.end(), [](const GuiDocInfo& a, const GuiDocInfo& b) {
+                        return a.scor > b.scor;
+                    });
+
+                    // extrage termenii din interogarea curentă pentru highlighting
+                    std::vector<std::string> queryTerms = extrageCuvintePentruHighlight(std::string(searchQuery));
+
+                    for (const auto& docInfo : docsSortate) {
+                        ImGui::TextColored(ImVec4(0.0f, 0.6f, 1.0f, 1.0f), "%s (%d potriviri)", docInfo.cale.c_str(), docInfo.scor);
+
+                        // deschide fișierul și afișează fiecare linie găsită cu termenii potriviți dedesubt
+                        std::ifstream fisier(docInfo.cale);
+                        if (!fisier.is_open()) {
+                            ImGui::TextWrapped("  (Eroare la deschiderea fisierului pentru a extrage textul)");
+                            continue;
+                        }
+
+                        std::string linieFisier;
+                        int indexLinieCurenta = 1;
+                        auto itLinii = docInfo.linii.begin();
+
+                        while (std::getline(fisier, linieFisier) && itLinii != docInfo.linii.end()) {
+                            if (indexLinieCurenta == itLinii->first) {
+                                // evidențiere inline a termenilor potriviți din linie
+                                std::vector<std::string> cuvinteDeEvidentiat = itLinii->second;
+                                for (const auto& q : queryTerms) {
+                                    if (std::find(cuvinteDeEvidentiat.begin(), cuvinteDeEvidentiat.end(), q) == cuvinteDeEvidentiat.end()) {
+                                        cuvinteDeEvidentiat.push_back(q);
+                                    }
+                                }
+
+                                const std::vector<MatchSpan> spans = gasesteSpanuriPentruCuvinte(linieFisier, cuvinteDeEvidentiat);
+
+                                // afișează numărul liniei
+                                ImGui::Text("  L%d:", itLinii->first);
+                                ImGui::SameLine();
+
+                                // culori
+                                ImVec4 colNormal = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+                                ImVec4 colHighlight = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
+
+                                std::vector<GuiTextSegment> segmente;
+                                int pos = 0;
+                                for (size_t si = 0; si < spans.size(); ++si) {
+                                    const auto& s = spans[si];
+                                    if (s.start > pos) {
+                                        segmente.push_back({ linieFisier.substr(pos, s.start - pos), colNormal });
+                                    }
+
+                                    segmente.push_back({ linieFisier.substr(s.start, s.length), colHighlight });
+                                    pos = s.start + s.length;
+                                }
+
+                                if (pos < static_cast<int>(linieFisier.size())) {
+                                    segmente.push_back({ linieFisier.substr(pos), colNormal });
+                                }
+
+                                renderWrappedColoredText(segmente);
+
+                                ++itLinii;
+                            }
+                            ++indexLinieCurenta;
+                        }
                         ImGui::Spacing();
                     }
                 }
-            }
         }
         ImGui::End();
 

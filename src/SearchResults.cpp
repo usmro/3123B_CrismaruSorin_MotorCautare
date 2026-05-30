@@ -200,3 +200,50 @@ void afiseazaRezultatePentruDocument(
         ++indexLinieCurenta;
     }
 }
+
+std::vector<MatchSpan> gasesteSpanuriPentruCuvinte(const std::string& text, const std::vector<std::string>& terms) {
+    std::vector<MatchSpan> spans;
+    if (text.empty() || terms.empty()) return spans;
+
+    for (const auto& term : terms) {
+        if (term.empty()) continue;
+        const std::string termEsc = escapeazaPentruRegex(term);
+        const std::regex pattern(termEsc, std::regex_constants::icase);
+
+        auto begin = std::sregex_iterator(text.begin(), text.end(), pattern);
+        auto end = std::sregex_iterator();
+
+        for (auto it = begin; it != end; ++it) {
+            const std::smatch m = *it;
+            const size_t inceput = static_cast<size_t>(m.position());
+            const size_t sfarsit = inceput + static_cast<size_t>(m.length());
+
+            if (!areGranitaLaPozitia(text, inceput) || !areGranitaLaPozitia(text, sfarsit)) {
+                continue;
+            }
+
+            MatchSpan ms;
+            ms.start = static_cast<int>(inceput);
+            ms.length = static_cast<int>(m.length());
+            ms.term = term;
+            spans.push_back(ms);
+        }
+    }
+
+    // Sortează span-urile după poziția de început și elimină suprapunerile (preferă span-urile anterioare)
+    std::sort(spans.begin(), spans.end(), [](const MatchSpan& a, const MatchSpan& b) {
+        if (a.start != b.start) return a.start < b.start;
+        return a.length > b.length;
+    });
+
+    std::vector<MatchSpan> nonOverlapping;
+    int curEnd = -1;
+    for (const auto& s : spans) {
+        if (s.start >= curEnd) {
+            nonOverlapping.push_back(s);
+            curEnd = s.start + s.length;
+        }
+    }
+
+    return nonOverlapping;
+}
