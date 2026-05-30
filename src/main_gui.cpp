@@ -61,6 +61,29 @@ static void renderWrappedColoredText(const std::vector<GuiTextSegment>& segments
     ImGui::NewLine();
 }
 
+static void incarcaFontCuDiacritice(const std::filesystem::path& directorProiect) {
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImFontConfig config;
+    config.OversampleH = 3;
+    config.OversampleV = 1;
+    config.PixelSnapH = true;
+
+    static const ImWchar rangeLatinExtins[] = { 0x0020, 0x024F, 0 };
+    const std::vector<std::filesystem::path> caiFont = {
+        directorProiect / "vendor" / "imgui" / "misc" / "fonts" / "DroidSans.ttf",
+        directorProiect / "vendor" / "imgui" / "misc" / "fonts" / "Roboto-Medium.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    };
+
+    for (const auto& caleFont : caiFont) {
+        if (ImFont* font = io.Fonts->AddFontFromFileTTF(caleFont.string().c_str(), 18.0f, &config, rangeLatinExtins)) {
+            io.FontDefault = font;
+            return;
+        }
+    }
+}
+
 std::filesystem::path obtineDirectorExecutabil() {
     char buffer[PATH_MAX + 1] = {0};
     const ssize_t lungime = ::readlink("/proc/self/exe", buffer, PATH_MAX);
@@ -118,6 +141,9 @@ int main(int, char**) {
     const std::string directorImplicit = obtineDirectorImplicitCautare();
     const std::filesystem::path caleStopwords = std::filesystem::path(directorImplicit) / "stopwords.txt";
     const std::filesystem::path caleLog = std::filesystem::path(directorImplicit) / "log.txt";
+
+    // Font Unicode pentru diacritice românești
+    incarcaFontCuDiacritice(std::filesystem::path(directorImplicit));
 
     // Starea aplicatiei
     Index index(caleStopwords.string());
