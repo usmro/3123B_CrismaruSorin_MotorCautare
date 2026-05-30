@@ -81,33 +81,6 @@ sudo apt-get install build-essential cmake git libglfw3-dev libopengl-dev
    ./build/test_index
    ```
 
-## Utilizare
-
-### Exemplu de Căutare CLI
-
-```bash
-# Căutare simplă: cuvinte multiple (AND implicit)
-./build/motor_cautare_cli
-> motor căutare
-
-# Phrase Search: termeni între ghilimele
-./build/motor_cautare_cli
-> "motor de căutare"
-
-# Combinație: cuvinte și fraze
-./build/motor_cautare_cli
-> "motor de căutare" performant
-```
-
-### Interfață GUI
-
-1. Deschideți `./build/motor_cautare_gui`
-2. Introduceți calea la directorul pe care doriți să-l indexați (sau lăsați implicita)
-3. Apăsați "Încarcă și Indexează"
-4. În câmpul "Interogare Căutare", introduceți termenii (cu sau fără ghilimele pentru fraze)
-5. Apăsați "Căută" sau Enter
-6. Rezultatele vor apărea cu termenii evidențiați în galben
-
 ## Organizarea Documentației
 
 Documentația extinsă este în [docs/Documentatie.md](docs/Documentatie.md). Aceasta include descrierea claselor, conceptele POO utilizate, diagrama UML și optimizările aplicate.
