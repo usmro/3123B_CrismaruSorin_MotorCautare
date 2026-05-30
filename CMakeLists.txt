@@ -30,7 +30,7 @@ target_include_directories(motor_cautare_gui PRIVATE ${GLFW_INCLUDE_DIRS})
 
 
 # CLI executable
-add_executable(motor_cautare_cli src/main.cpp src/Document.cpp src/Index.cpp src/Logger.cpp)
+add_executable(motor_cautare_cli src/main.cpp src/SearchResults.cpp src/Document.cpp src/Index.cpp src/Logger.cpp)
 
 # Tests executable
 add_executable(test_index tests/test_index.cpp src/Document.cpp src/Index.cpp src/Logger.cpp)

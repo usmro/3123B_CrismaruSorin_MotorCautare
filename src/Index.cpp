@@ -7,6 +7,55 @@
 #include <sstream>
 #include <fstream>
 
+namespace {
+
+std::string normalizeazaTextPentruFraza(const std::string& text) {
+    std::string rezultat;
+    bool ultimulAFostSpatiu = false;
+
+    for (const unsigned char caracter : text) {
+        if (std::isalnum(caracter)) {
+            rezultat.push_back(static_cast<char>(std::tolower(caracter)));
+            ultimulAFostSpatiu = false;
+        } else if (!rezultat.empty() && !ultimulAFostSpatiu) {
+            rezultat.push_back(' ');
+            ultimulAFostSpatiu = true;
+        }
+    }
+
+    if (!rezultat.empty() && rezultat.back() == ' ') {
+        rezultat.pop_back();
+    }
+
+    return rezultat;
+}
+
+std::vector<int> cautaFrazaExactaInDocument(
+    const Document& document,
+    const std::string& frazaNormalizata
+) {
+    std::vector<int> liniiGasite;
+
+    std::ifstream fisier(document.obtineCaleFisier());
+    if (!fisier.is_open()) {
+        return liniiGasite;
+    }
+
+    std::string linie;
+    int numarLinie = 1;
+
+    while (std::getline(fisier, linie)) {
+        if (!frazaNormalizata.empty() && normalizeazaTextPentruFraza(linie).find(frazaNormalizata) != std::string::npos) {
+            liniiGasite.push_back(numarLinie);
+        }
+        ++numarLinie;
+    }
+
+    return liniiGasite;
+}
+
+} // namespace
+
 Index::Index(const std::string& stopwordsPath) {
     incarcaStopwords(stopwordsPath);
 }
@@ -45,7 +94,9 @@ void Index::incarcaDocumenteDinDirector(const std::string& caleDirector) {
 
             const std::string caleFisier = entry.path().string();
             if (esteFisierText(caleFisier)) {
-                m_documente.emplace_back(caleFisier);
+                if (numeFisier != "log.txt" && numeFisier != "stopwords.txt") {
+                    m_documente.emplace_back(caleFisier);
+                }
             }
         }
     } catch (const std::filesystem::filesystem_error& e) {
@@ -75,6 +126,25 @@ void Index::construiesteIndex() {
 }
 
 std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> Index::cauta(const std::string& query) {
+    if (query.size() >= 2 && query.front() == '"' && query.back() == '"' && query.find(" AND ") == std::string::npos && query.find(" OR ") == std::string::npos) {
+        const std::string fraza = query.substr(1, query.size() - 2);
+        const std::string frazaNormalizata = normalizeazaTextPentruFraza(fraza);
+
+        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int>>> rezultatFinal;
+        if (frazaNormalizata.empty()) {
+            return {};
+        }
+
+        for (const auto& document : m_documente) {
+            auto liniiGasite = cautaFrazaExactaInDocument(document, frazaNormalizata);
+            if (!liniiGasite.empty()) {
+                rezultatFinal[fraza][document.obtineCaleFisier()] = liniiGasite;
+            }
+        }
+
+        return rezultatFinal;
+    }
+
     std::istringstream iss(query);
     std::string token;
     std::vector<std::string> cuvinteTotale;

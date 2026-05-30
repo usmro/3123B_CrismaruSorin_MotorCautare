@@ -1,7 +1,6 @@
+Dezvoltarea sistemelor de căutare moderne se bazează pe procesarea limbajului natural (NLP - Natural Language Processing). Algoritmii moderni utilizează tehnici avansate precum tokenizarea, stemming-ul și analizarea semantică pentru a înțelege intenția utilizatorului (search intent).
 
-Acesta este un document de test
-
-Cautare este un cuvant cheie
-
-
-Acesta este sfarsitul documentului
+Spre deosebire de indexarea clasică bazată pe frecvența termenilor (TF-IDF), 
+modelele actuale folosesc vector embeddings pentru a mapa cuvintele într-un spațiu multidimensional. 
+Astfel, un motor de căutare performant va ști că atunci când un utilizator tastează „smartphone”, rezultatele trebuie să includă și pagini despre „telefoane mobile” sau „dispozitive inteligente”, chiar dacă termenul exact nu apare în textul sursă. 
+Python și Go sunt printre cele mai populare limbaje de programare folosite pentru a scrie astfel de sisteme de backend scalabile.

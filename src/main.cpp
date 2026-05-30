@@ -1,11 +1,11 @@
 #include "Index.h"
 #include "Logger.h"
+#include "SearchResults.h"
 
 #include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <map>
 
 #include <limits.h>
 #include <unistd.h>
@@ -108,28 +108,16 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
+            const auto cuvinteHighlight = extrageCuvintePentruHighlight(query);
             const auto rezultate = index.cauta(query);
 
             std::cout << "Rezultate pentru query-ul '" << query << "':" << std::endl;
             if (rezultate.empty()) {
                 std::cout << "Niciun document gasit." << std::endl;
             } else {
-                std::map<std::string, std::vector<std::pair<std::string, std::vector<int>>>> documenteAfisate;
-                for (const auto& [cuvant, docs] : rezultate) {
-                    for (const auto& [doc, linii] : docs) {
-                        documenteAfisate[doc].push_back({cuvant, linii});
-                    }
-                }
-
-                for (const auto& [doc, detalii] : documenteAfisate) {
-                    std::cout << "- " << doc << ":" << std::endl;
-                    for (const auto& pereche : detalii) {
-                        std::cout << "  - Cuvantul '" << pereche.first << "' gasit pe liniile: ";
-                        for (size_t i = 0; i < pereche.second.size(); ++i) {
-                            std::cout << pereche.second[i] << (i < pereche.second.size() - 1 ? ", " : "");
-                        }
-                        std::cout << std::endl;
-                    }
+                const auto docsSortate = construiesteRezultateSortate(rezultate);
+                for (const auto& docInfo : docsSortate) {
+                    afiseazaRezultatePentruDocument(docInfo, cuvinteHighlight);
                 }
             }
         } else if (optiune == "4" || optiune == "exit" || optiune == "quit") {
